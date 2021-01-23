@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.itheima.dao.PermissionDao">
+    <!--根据用户id关联查询角色集合-->
+    <select id="findPermissionsByRoleId" parameterType="int" resultType="com.itheima.pojo.Permission">
+        select tp.* from t_permission tp,t_role_permission trp where tp.id = trp.permission_id and trp.role_id = #{roleId}
+    </select>
+
+    <!--权限分页查询-->
+    <select id="findPage" parameterType="string" resultType="com.itheima.pojo.Permission">
+        select * from t_permission
+        <if test="value != null and value.length > 0">
+            where name = #{value} or keyword = #{value}
+        </if>
+    </select>
+
+    <!--查询权限-->
+    <select id="findById" parameterType="int" resultType="com.itheima.pojo.Permission">
+        select * from t_permission where id = #{id}
+    </select>
+
+    <!--新增-->
+    <insert id="add" parameterType="com.itheima.pojo.Permission">
+        INSERT into t_permission (name , keyword,description) VALUES (#{name},#{keyword},#{description})
+    </insert>
+
+    <!--编辑-->
+    <update id="edit" parameterType="com.itheima.pojo.Permission">
+        update t_permission
+        <set>
+            <if test="name != null and name.length > 0" >
+                name = #{name},
+            </if>
+            <if test="keyword != null and keyword.length > 0" >
+                keyword = #{keyword},
+            </if>
+            <if test="description != null and description.length > 0" >
+                description = #{description}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!--删除-->
+    <delete id="deleteById" parameterType="int">
+        delete from t_permission where id = #{id}
+    </delete>
+
+    <!--关联角色-->
+    <select id="findRoleById" parameterType="int" resultType="com.itheima.pojo.Role">
+        select r.* from t_role_permission rp
+        left JOIN t_role r on rp.role_id = r.id
+        where rp.permission_id = #{id}
+    </select>
+
+    <!--查询权限组名称-->
+    <select id="getByName" parameterType="string" resultType="com.itheima.pojo.Permission">
+        select * from t_permission where name = #{name}
+    </select>
+
+
+    <select id="findAll" resultType="com.itheima.pojo.Permission">
+        SELECT * FROM t_permission
+    </select>
+
+    <select id="findAllPermissionNames" resultType="java.lang.String">
+        SELECT name FROM t_permission
+    </select>
+
+    <select id="findAllPermissionKeywords" resultType="java.lang.String">
+        SELECT keyword FROM t_permission
+    </select>
+</mapper>

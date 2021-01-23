@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.itheima.dao.UserDao">
+    <!-- 用户对象 -->
+    <!--<select id="findUserByUsername" resultType="com.itheima.pojo.User" parameterType="string">
+        select * from t_user where username = #{username}
+    </select>-->
+
+    <!--定义userMap-->
+    <resultMap id="userMap" type="com.itheima.pojo.User">
+        <id column="id" property="id"></id>
+        <!--根据用户id关联查询角色集合-->
+        <collection property="roles" column="id" select="com.itheima.dao.RoleDao.findRolesByUserId"/>
+    </resultMap>
+
+    <select id="findUserByUsername" parameterType="string" resultMap="userMap">
+        select * from t_user where username = #{username}
+    </select>
+
+    <!--根据用户名获取用户显示菜单-->
+    <select id="findMenuByusername" resultType="com.itheima.pojo.Menu" parameterType="string">
+        SELECT tm.* FROM t_menu tm ,t_role_menu rm,t_role tr,t_user_role ur,t_user us where
+        tm.id=rm.menu_id and
+        rm.role_id = tr.id and
+        tr.id = ur.role_id and
+        ur.user_id = us.id and
+        tm.level = 1 and
+        us.username = #{username} ORDER BY tm.path
+    </select>
+
+    <!--    -->
+    <select id="findSubMenuByusername" resultType="com.itheima.pojo.Menu" parameterType="string">
+        SELECT tm.* FROM t_menu tm ,t_role_menu rm,t_role tr,t_user_role ur,t_user us where
+        tm.id=rm.menu_id and
+        rm.role_id = tr.id and
+        tr.id = ur.role_id and
+        ur.user_id = us.id and
+        tm.level = 2 and
+        us.username = #{username}
+    </select>
+
+    <!--修改密码-->
+    <update id="updatePassword" parameterType="map">
+        UPDATE t_user set password=#{newPassword} where username = #{username}
+    </update>
+
+    <!--通过username获取password-->
+    <select id="findPasswordByUsername" parameterType="string" resultType="string">
+        SELECT password FROM t_user where username=#{username}
+    </select>
+
+    <!--用户分页查询-->
+    <select id="selectByCondition" parameterType="string" resultType="com.itheima.pojo.User">
+        select * from t_user
+        <if test="value != null and value.length > 0">
+            where username = #{value} or telephone = #{value}
+        </if>
+    </select>
+
+    <!--新增用户-->
+    <insert id="add" parameterType="com.itheima.pojo.User">
+        /*获取用户id*/
+        <selectKey resultType="int" order="AFTER" keyProperty="id">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        insert into t_user(birthday,gender,username,password,remark,station,telephone)
+        values(#{birthday},#{gender},#{username},#{password},#{remark},#{station},#{telephone})
+    </insert>
+
+    <!--设置用户和角色中间表-->
+    <insert id="setUserAndRole" parameterType="map">
+        INSERT INTO t_user_role (user_id, role_id) VALUES (#{userId}, #{roleId})
+    </insert>
+
+    <!--根据用户id删除用户信息-->
+    <delete id="deleteById" parameterType="int">
+        delete from t_user where id =#{id}
+    </delete>
+
+    <!--根据用户id查询用户角色中间表-->
+    <select id="findRoleByUserId" parameterType="int" resultType="int">
+        select count(*) from t_user_role where user_id =#{id}
+    </select>
+
+    <!--根据用户id删除用户角色中间表-->
+    <select id="deleteRoleById" parameterType="int" >
+        delete from t_user_role where user_id =#{id}
+    </select>
+
+    <!--根据用户id 查询角色ids-->
+    <select id="findRoleIdsByUserId" parameterType="int" resultType="int">
+        select role_id from t_user_role where user_id = #{id}
+    </select>
+
+    <!--根据用户id 更新用户数据-->
+    <update id="edit" parameterType="com.itheima.pojo.User">
+        update t_user
+        <set>
+            <if test="username!=null and username.length>0">
+                username=#{username},
+            </if>
+            <if test="birthday!=null">
+                birthday=#{birthday},
+            </if>
+            <if test="gender!=null and gender.length>0">
+                gender=#{gender},
+            </if>
+            <if test="password!=null and password.length>0">
+                password=#{password},
+            </if>
+            <if test="remark!=null and remark.length>0">
+                remark=#{remark},
+            </if>
+            <if test="station!=null and station.length>0">
+                station=#{station},
+            </if>
+            <if test="telephone!=null and telephone.length>0">
+                telephone=#{telephone},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <!-- 根据用户id查询用户 -->
+    <select id="findById" parameterType="int" resultType="com.itheima.pojo.User">
+        select * from t_user where id = #{id}
+    </select>
+
+    <select id="findAllUsernames" resultType="java.lang.String">
+        SELECT username FROM t_user
+    </select>
+
+    <select id="findAllUserPhones" resultType="java.lang.String">
+        SELECT telephone FROM t_user
+    </select>
+
+    <select id="selectImgsByUserId" resultType="int">
+        SELECT count(user_id) FROM t_user_mainpage
+    </select>
+
+    <insert id="insertUserImg">
+        INSERT INTO t_user_mainpage VALUES (#{param1,jdbcType=INTEGER}, #{param2,jdbcType=VARCHAR})
+    </insert>
+
+    <update id="updateImg">
+        UPDATE t_user_mainpage SET img_name = #{param2,jdbcType=VARCHAR} WHERE user_id = #{param1}
+    </update>
+
+    <select id="findImgNameById" resultType="java.lang.String">
+        SELECT img_name FROM t_user_mainpage WHERE user_id = #{id}
+    </select>
+</mapper>

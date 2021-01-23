@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>homepage</title>
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="../js/vue.js"></script>
+    <script src="../plugins/elementui/index.js"></script>
+    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <script src="../js/axios-0.18.0.js"></script>
+</head>
+<body>
+<div id="app">
+    <img :src="imgName" width="100%"/>
+</div>
+</body>
+
+<script>
+    var vue = new Vue({
+        el: "#app",
+        data: {
+          imgName: '../img/homepage.jpg'
+        },
+        created() {
+            axios.post("/mainpage/getMainPageImg.do").then(response => {
+                if (response.data.flag) {
+                    if (response.data.data != null) {
+                        this.imgName = response.data.data;
+                    }
+                }
+            });
+            console.log(this.img)
+        }
+    })
+</script>
+</html>

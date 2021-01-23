@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- 页面meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>传智健康</title>
+    <meta name="description" content="传智健康">
+    <meta name="keywords" content="传智健康">
+    <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="../plugins/elementui/index.css">
+    <link rel="stylesheet" href="../plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- 引入组件库 -->
+    <script type="text/javascript" src="../js/jquery.min.js"></script>
+    <script src="../js/vue.js"></script>
+    <script src="../plugins/elementui/index.js"></script>
+    <script src="../js/axios-0.18.0.js"></script>
+    <style>
+        .datatable {
+            position: relative;
+            box-sizing: border-box;
+            -webkit-box-flex: 1;
+            width: 100%;
+            max-width: 100%;
+            font-size: 14px;
+            color: rgb(96, 98, 102);
+            overflow: hidden;
+            flex: 1 1 0%;
+        }
+
+        .datatable td, .datatable th {
+            padding: 12px 0;
+            min-width: 0;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+            position: relative;
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="hold-transition">
+<div id="app">
+    <div class="content-header">
+        <h1>菜单管理
+            <small>菜单管理</small>
+        </h1>
+        <el-breadcrumb separator-class="el-icon-arrow-right" class="breadcrumb">
+            <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+            <el-breadcrumb-item>菜单管理</el-breadcrumb-item>
+            <el-breadcrumb-item>菜单管理</el-breadcrumb-item>
+        </el-breadcrumb>
+    </div>
+    <div class="app-container">
+        <div class="box">
+            <div class="filter-container">
+                <!--搜索输入下拉框-->
+                <el-autocomplete class="inline-input"
+                                 v-model="formData.queryString"
+                                 :fetch-suggestions="querySearch"
+                                 placeholder="名称"
+                                 :trigger-on-focus="false" style="width: 200px;"
+                                 @select="handleSelect">
+                    <i class="el-icon-edit el-input__icon"
+                       slot="suffix"></i>
+                    <template slot-scope="{ item }">
+                        <div class="name">{{ item.value }}</div>
+                    </template>
+                </el-autocomplete>
+                <el-button type="success" plain @click="findByName()" class="dalfBut" icon="el-icon-search">查询</el-button>
+                <el-button type="primary" plain class="butT" @click="handleCreate()" icon="el-icon-circle-plus-outline">新增主菜单</el-button>
+            </div>
+            <el-table
+                    size="small"
+                    :data="dataList"
+                    style="width: 100%">
+                <el-table-column type="expand" label="详细" align="center"></el-table-column>
+                <el-table-column prop="path" label="编号" align="center"></el-table-column>
+                <el-table-column prop="name" label="名称" align="center"></el-table-column>
+                <el-table-column prop="linkUrl" label="链接" align="center"></el-table-column>
+                <el-table-column label="操作" align="left">
+                    <template slot-scope="scope">
+                        <el-button type="primary" size="mini" @click="handleUpdate(scope.row)"
+                                   icon="el-icon-edit"></el-button>
+                        <el-button type="danger" size="mini" @click="handleDelete(scope.row)"
+                                   icon="el-icon-delete"></el-button>
+                        <el-button type="primary" size="mini" @click="handleCreateChildren(scope.row)"
+                                   icon="el-icon-circle-plus">新增子菜单</el-button>
+                    </template>
+                </el-table-column>
+                <el-table-column type="expand">
+                    <template slot-scope="props">
+                        <el-form label-position="center" inline class="demo-table-expand">
+                            <el-table
+                                    size="mini"
+                                    :data="props.row.children"
+                                    style="width: 100%"
+                                    :show-header="false">
+                                <el-table-column prop="path" label="编号" align="center"></el-table-column>
+                                <el-table-column prop="name" label="名称" align="center"></el-table-column>
+                                <el-table-column prop="linkUrl" label="链接" align="center"></el-table-column>
+                                <el-table-column label="操作" align="left">
+                                    <template slot-scope="scope">
+                                        <el-button type="primary" size="mini" @click="handleUpdateChildren(scope.row)"
+                                                   icon="el-icon-edit"></el-button>
+                                        <el-button size="mini" type="danger" @click="handleDeleteChildren(scope.row)"
+                                                   icon="el-icon-delete"></el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </el-form>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <!-- 新增标签弹层 -->
+            <div class="add-form">
+                <el-dialog title="新增主菜单" :visible.sync="dialogFormVisible">
+                    <template>
+                        <el-tabs v-model="activeName" type="card">
+                            <el-tab-pane label="基本信息" name="first">
+                                <el-form :model="formData" :rules="rules" ref="formData" label-width="100px"
+                                         class="demo-ruleForm">
+                                    <el-form-item label="名称" prop="name">
+                                        <el-input v-model="formData.name"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="路径">
+                                        <el-input v-model="formData.linkUrl"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="编号" prop="path">
+                                        <el-input v-model.number="formData.path"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="图标" prop="icon">
+                                        <el-select v-model="formData.icon" placeholder="请选择">
+                                            <el-option
+                                                    v-for="item in options"
+                                                    :key="item.value"
+                                                    :label="item.label"
+                                                    :value="item.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item>
+                                        <el-button type="primary" @click="handleAdd('formData')">确定</el-button>
+                                        <el-button @click="dialogFormVisible = false">取消</el-button>
+                                    </el-form-item>
+                                </el-form>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </template>
+                </el-dialog>
+            </div>
+            <!-- 新增标签弹层 子菜单 -->
+            <div class="add-form">
+                <el-dialog title="新增子菜单" :visible.sync="dialogChildFormVisible">
+                    <template>
+                        <el-tabs v-model="activeName" type="card">
+                            <el-tab-pane label="基本信息" name="first">
+                                <el-form :model="formData" :rules="rules" ref="formData" label-width="100px"
+                                         class="demo-ruleForm">
+                                    <el-form-item label="名称" prop="name">
+                                        <el-input v-model="formData.name"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="路径">
+                                        <el-input v-model="formData.linkUrl"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="编号" prop="path">
+                                        <el-input v-model.number="formData.path"></el-input>
+                                    </el-form-item>
+                                    <el-form-item>
+                                        <el-button type="primary" @click="handleAddChild('formData')">确定</el-button>
+                                        <el-button @click="dialogChildFormVisible = false">取消</el-button>
+                                    </el-form-item>
+                                </el-form>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </template>
+                </el-dialog>
+            </div>
+            <!-- 编辑标签弹层 主菜单-->
+            <div class="add-form">
+                <el-dialog title="编辑主菜单" :visible.sync="dialogFormVisible4Edit">
+                    <template>
+                        <el-tabs v-model="activeName" type="card">
+                            <el-tab-pane label="基本信息" name="first">
+                                <el-form :model="formData" :rules="rules" ref="formData" label-width="100px"
+                                         class="demo-ruleForm">
+                                    <el-form-item label="名称" prop="name">
+                                        <el-input v-model="formData.name"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="路径">
+                                        <el-input v-model="formData.linkUrl"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="编号" prop="path">
+                                        <el-input v-model="formData.path"></el-input>
+                                    </el-form-item>
+                                    <el-form-item>
+                                        <el-button type="primary" @click="handleEdit('formData')">确定</el-button>
+                                        <el-button @click="dialogFormVisible4Edit = false">取消</el-button>
+                                    </el-form-item>
+                                </el-form>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </template>
+                </el-dialog>
+            </div>
+            <!-- 编辑标签弹层 子菜单-->
+            <div class="add-form">
+                <el-dialog title="编辑子菜单" :visible.sync="dialogChildFormVisible4Edit">
+                    <template>
+                        <el-tabs v-model="activeName" type="card">
+                            <el-tab-pane label="基本信息" name="first">
+                                <el-form :model="formData" :rules="rules" ref="formData" label-width="100px"
+                                         class="demo-ruleForm">
+                                    <el-form-item label="名称" prop="name">
+                                        <el-input v-model="formData.name"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="路径">
+                                        <el-input v-model="formData.linkUrl"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="编号" prop="path">
+                                        <el-input v-model.number="formData.path"></el-input>
+                                    </el-form-item>
+                                    <el-form-item>
+                                        <el-button type="primary" @click="handleEditChild('formData')">确定</el-button>
+                                        <el-button @click="dialogChildFormVisible4Edit = false">取消</el-button>
+                                    </el-form-item>
+                                </el-form>
+                            </el-tab-pane>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </template>
+                </el-dialog>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+
+<script>
+    var vue = new Vue({
+        el: '#app',
+        data() {
+            //编号校验规则
+            var checkPath = (rule, value, callback) => {
+                if (!value) {
+                    return callback(new Error('编号不能为空或0'));
+                }
+                setTimeout(() => {
+                    let reg = /^[1-9]+[0-9]*$/;
+                    if (!reg.test(value)) {
+                        callback(new Error('请输入正整数'));
+                    } else {
+                        callback();
+                    }
+                }, 1000);
+            };
+            return {
+                activeName: 'first',
+                //列表数据
+                dataList: [],
+                defaultProps: {
+                    children: 'children',
+                    name: 'name'
+                },
+                menuNames:[],//存放菜单名集合
+                options:[],//存放图标集合
+                formData: {
+                    queryString: '',
+                    icon:''
+                },//表单数据
+                tableData: [],//新增和编辑表单中对应的检查项列表数据
+                checkitemIds: [],//新增和编辑表单中检查项对应的复选框，基于双向绑定可以进行回显和数据提交
+                dialogFormVisible: false,//控制添加窗口显示/隐藏
+                dialogChildFormVisible: false,//控制添加窗口显示/隐藏 子菜单
+                dialogFormVisible4Edit: false,//控制编辑窗口显示/隐藏
+                dialogChildFormVisible4Edit: false,//控制编辑窗口显示/隐藏 子菜单
+                rules: {
+                    name: [
+                        {required: true, message: '名称不能为空', trigger: 'blur'}
+                    ],
+                    path: [
+                        {validator: checkPath, required: true, trigger: 'blur'}
+                    ]
+                }
+            }
+        },
+        created() {
+            this.findAll();
+        },
+        mounted(){
+            axios.get("/menu/findMenuNames.do").then(res=>{
+                this.menuNames = res.data.data;
+            });
+            axios.get("/menu/getIconList.do").then(res=>{
+                this.options = res.data.data;
+            });
+        },
+        methods: {
+            //编辑主菜单
+            handleEdit(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.post("/menu/edit.do", this.formData).then(res => {
+                            this.resetForm();
+                            //弹出窗口
+                            this.dialogFormVisible4Edit = false;
+                            this.$message({
+                                message: res.data.message,
+                                type: res.data.flag ? 'success' : 'error'
+                            });
+                            this.findAll();
+                        })
+                    }
+                });
+            },
+
+            //编辑子菜单
+            handleEditChild(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.post("/menu/editChild.do", this.formData).then(res => {
+                            this.resetForm();
+                            //弹出窗口
+                            this.dialogChildFormVisible4Edit = false;
+                            this.$message({
+                                message: res.data.message,
+                                type: res.data.flag ? 'success' : 'error'
+                            });
+                            this.findAll();
+                        })
+                    }
+                });
+            },
+            //添加主菜单
+            handleAdd(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.post("/menu/add.do", this.formData).then(res => {
+                            this.resetForm();
+                            //弹出窗口
+                            this.dialogFormVisible = false;
+                            this.$message({
+                                message: res.data.message,
+                                type: res.data.flag ? 'success' : 'error'
+                            });
+                            this.findAll();
+                        })
+                    }
+                });
+            },
+
+            //添加子菜单
+            handleAddChild(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.post("/menu/addChild.do", this.formData).then(res => {
+                            this.resetForm();
+                            //弹出窗口
+                            this.dialogChildFormVisible = false;
+                            this.$message({
+                                message: res.data.message,
+                                type: res.data.flag ? 'success' : 'error'
+                            });
+                            this.findAll();
+                        })
+                    }
+                });
+            },
+
+            //查询所有
+            findAll() {
+                axios.get("/menu/findAll.do").then(res => {
+                    this.dataList = res.data.data;
+                })
+            },
+            // 重置表单
+            resetForm() {
+                this.formData = {};
+                this.checkitemIds = [];
+                this.activeName = 'first';
+            },
+            // 弹出添加窗口
+            handleCreate() {
+                //清空表单数据 以及 默认选中第一个选项卡
+                this.resetForm();
+                this.dialogFormVisible = true;
+            },
+            // 弹出添加窗口 子菜单
+            handleCreateChildren(row) {
+                //清空表单数据 以及 默认选中第一个选项卡
+                this.resetForm();
+                //将父菜单id传入
+                this.formData.parentMenuId = row.id;
+                this.dialogChildFormVisible = true;
+            },
+            // 弹出编辑窗口
+            handleUpdate(row) {
+                //弹出编辑窗口
+                this.dialogFormVisible4Edit = true;
+                // 并回显主菜单信息
+                axios.get("/menu/findById.do?id=" + row.id).then(res => {
+                    this.formData = res.data.data;//回显主菜单数据
+                    if (res.data.flag) {
+                    } else {
+                        this.$message({
+                            message: res.data.message,
+                            type: 'success'
+                        });
+                    }
+                })
+            },
+            // 弹出编辑窗口 子菜单
+            handleUpdateChildren(row) {
+                //弹出编辑窗口
+                this.dialogChildFormVisible4Edit = true;
+                // 并回显主菜单信息
+                axios.get("/menu/findChildById.do?id=" + row.id).then(res => {
+                    this.formData = res.data.data;//回显子菜单数据
+                    if (res.data.flag) {
+                    } else {
+                        this.$message({
+                            message: res.data.message,
+                            type: 'success'
+                        });
+                    }
+                })
+            },
+            // 删除
+            handleDelete(row) {
+                this.$confirm('此操作将永久删除此菜单记录, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    //发送删除请求
+                    axios.get("/menu/deleteById.do?id=" + row.id).then(res => {
+                        this.$message({
+                            message: res.data.message,
+                            type: res.data.flag ? 'success' : 'error'
+                        });
+                        this.findAll();
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            // 删除子菜单
+            handleDeleteChildren(row) {
+                this.$confirm('此操作将永久删除该子菜单记录, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    //发送删除请求
+                    axios.get("/menu/deleteChildById.do?id=" + row.id).then(res => {
+                        this.$message({
+                            message: res.data.message,
+                            type: res.data.flag ? 'success' : 'error'
+                        });
+                        this.findAll();
+                    })
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });
+                });
+            },
+            handleNodeClick(data) {
+                console.log(data);
+            },
+            //搜索获取以及匹配下拉框数据
+            querySearch(queryString, cb) {
+                var menus = this.menuNames;
+                var results = queryString ? menus.filter(this.createFilter(queryString)) : menus;
+                // 调用 callback 返回建议列表的数据
+                cb(results);
+            },
+            createFilter(queryString) {
+                return (menuNames) => {
+                    return (menuNames.value.toLowerCase().indexOf(queryString.toLowerCase()) !== -1);
+                };//在 menuNames 中查询包含queryString的数据
+            },
+            handleSelect(item) {
+                this.formData.queryString = item.value; //将输入框数据绑定选择的数据
+                this.findByName();
+            },
+            //关键字查询
+            findByName() {
+                let parms = {
+                    queryString:this.formData.queryString
+                };
+                console.log("parms >>> "+JSON.stringify(parms));
+                axios.post("/menu/findByName.do",parms).then(res=>{
+                    this.dataList = res.data.data;
+                })
+            },
+        }
+    })
+</script>
+</html>
